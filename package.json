@@ -1,5 +1,5 @@
 {
-  "name": "benv",
+  "name": "@hola.org/benv",
   "version": "3.3.0-hola.3",
   "description": "Stub a browser environment and test your client-side code in node.js.",
   "main": "index.js",
