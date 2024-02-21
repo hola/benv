@@ -1,4 +1,5 @@
-var jsdom= require('jsdom/lib/old-api.js');
+//var jsdom = require('jsdom/lib/old-api.js');
+var jsdom = require('jsdom');
 var rewire = require('rewire');
 var path = require('path');
 var fs = require('fs');
@@ -22,22 +23,13 @@ var globals = {};
 
 module.exports.setup = function(callback, options) {
   if (typeof window != 'undefined') return callback && callback();
-  var env = {
-    html: "<html><body></body></html>",
-    done: function(errs, w) {
-      global.window = w;
-      domGlobals.forEach(function(varName) {
-        global[varName] = w[varName] || function(){};
-      });
-      if (callback) callback();
-    }
-  };
-  if (options !== undefined) {
-    for(var key in options) {
-      env[key] = options[key];
-    }
-  }
-  jsdom.env(env);
+  var dom = new jsdom.JSDOM("<html><body></body></html>", {...options});
+  var w = dom.window;
+  global.window = w;
+  domGlobals.forEach(function(varName) {
+    global[varName] = w[varName] || function(){};
+  });
+  if (callback) callback();
 }
 
 // Pass in common client-side dependencies and expose them globally.
@@ -98,15 +90,14 @@ module.exports.render = function(filename, data, callback) {
     { filename: fullPath }
   )(data);
 
-  jsdom.env(html, function(err, w) {
-    var scriptEls = w.document.getElementsByTagName('script');
-    Array.prototype.forEach.call(scriptEls, function(el) {
-      el.parentNode.removeChild(el);
-    });
-    var bodyHtml = w.document.getElementsByTagName('body')[0].innerHTML;
-    document.getElementsByTagName('body')[0].innerHTML = bodyHtml;
-    if (callback) callback();
+  var w = new jsdom.JSDOM(html, {}).window;
+  var scriptEls = w.document.getElementsByTagName('script');
+  Array.prototype.forEach.call(scriptEls, function(el) {
+    el.parentNode.removeChild(el);
   });
+  var bodyHtml = w.document.getElementsByTagName('body')[0].innerHTML;
+  document.getElementsByTagName('body')[0].innerHTML = bodyHtml;
+  if (callback) callback();
 }
 
 // Rewires jadeify templates to work in node again.
